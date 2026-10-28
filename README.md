@@ -7,10 +7,13 @@ Live demo: **[URL to be added after deployment]**
 ## Features
 
 - Daily timeline from 09:00 to 18:00 with proportional booking blocks and past-time shading.
-- Date navigation and booking creation, editing, and deletion.
+- Date selection in the creation form, synchronized with the timeline.
+- Unavailable starts are disabled; changing start selects the earliest valid end (normally +30 minutes). End options respect duration and overlap rules.
+- Editing and read-only past-booking details open in a centered modal on all screen sizes.
+- Successful creation scrolls to the new booking by its returned ID, respecting reduced motion.
 - Inline validation, loading and error states, deletion confirmation, and unsaved-change warnings.
 - HTTP 409 recovery that preserves the draft and refreshes the schedule.
-- Two-column desktop layout and a modal booking form on mobile.
+- Desktop side-panel creation and modal editing; all forms use a modal on mobile.
 
 ## Tech Stack
 
@@ -97,7 +100,7 @@ When the server returns 409, the form stays open and all entered values remain u
 ## Limitations
 
 - The application and mock server use browser-local date/time and the browser's clock; there is no room-specific timezone.
-- Demo bookings persist in localStorage under `roomly-bookings-v1`. The first visit seeds three bookings for the current local day. Clear that key to reset.
+- Demo bookings persist in localStorage under `roomly-bookings-v1`. The first visit seeds 26 bookings across yesterday, today, tomorrow, and two dates within the next two weeks. Existing storage is retained. Clear that key to reset.
 - Persistence is per browser and origin. There is no shared backend, authentication, cross-device sync, or atomic multi-user concurrency. localStorage is not a transactional database.
 - Automated browser coverage targets Chromium at desktop and mobile sizes.
 

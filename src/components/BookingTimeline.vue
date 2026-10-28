@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { CalendarDays, RefreshCw } from 'lucide-vue-next'
 import { useBookingsStore } from '../stores/bookings'
 import { localDate } from '../utils/time'
@@ -9,6 +9,15 @@ const props = defineProps<{ now: Date }>()
 defineEmits<{ select: [booking: Booking] }>()
 const store = useBookingsStore()
 const pastMinutes = computed(() => store.selectedDate < localDate(props.now) ? 540 : store.selectedDate > localDate(props.now) ? 0 : Math.max(0, Math.min(540, props.now.getHours() * 60 + props.now.getMinutes() - 540)))
+watch(() => [store.createdId, store.loading], async () => {
+  if (!store.createdId || store.loading || store.error) return
+  await nextTick()
+  const card = document.getElementById('booking-' + store.createdId)
+  if (card) {
+    card.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' })
+    store.createdId = undefined
+  }
+})
 </script>
 <template>
   <section class="timeline-panel" aria-label="Daily booking timeline" :aria-busy="store.loading">

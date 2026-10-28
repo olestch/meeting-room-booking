@@ -20,7 +20,7 @@ function setup() {
 describe('form and server integration', () => {
   it('shows field validation without sending an invalid draft', async () => {
     const store = setup(); wrapper = mount(BookingForm, { props: { now } })
-    await wrapper.get('#end').setValue('10:15'); await wrapper.get('form').trigger('submit')
+    store.draft!.end = '10:15'; await wrapper.get('form').trigger('submit')
     expect(wrapper.text()).toContain('Book at least 30 minutes.'); expect(store.draft?.end).toBe('10:15')
   })
   it('disables submission while saving and refreshes after success', async () => {
