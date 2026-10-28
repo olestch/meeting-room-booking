@@ -30,6 +30,14 @@ function close() { perform(() => { store.closeForm(); formDialog.value?.close();
 function changeDate(date: string) { if (validDate(date) && date !== store.selectedDate) perform(() => { void store.selectDate(date); formDialog.value?.close() }) }
 function moveDate(offset: number) { const date = new Date(`${store.selectedDate}T12:00:00`); date.setDate(date.getDate() + offset); changeDate(localDate(date)) }
 function discard() { const action = pending.value; pending.value = null; store.closeForm(); action?.() }
+async function cancelConfirmation() {
+  pending.value = null; deleting.value = false
+  await nextTick()
+  const dialog = formDialog.value
+  if (dialog?.open && !dialog.contains(document.activeElement)) {
+    dialog.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled), button:not(:disabled)')?.focus()
+  }
+}
 function beforeUnload(event: BeforeUnloadEvent) { if (store.dirty) { event.preventDefault(); event.returnValue = '' } }
 function resize() { mobile.value = window.matchMedia('(max-width: 760px)').matches; void syncDialog() }
 watch(() => [!!store.draft, modal.value], () => { void syncDialog() })
@@ -49,6 +57,6 @@ onBeforeUnmount(() => { clearInterval(timer); window.removeEventListener('before
     <footer class="page-footer"><span>Thoughtful meetings. Better days.</span><span>One room, endless possibilities.</span></footer>
   </main>
   <dialog ref="formDialog" class="mobile-form" aria-labelledby="form-title" @cancel.prevent="close"><BookingForm v-if="modal" :now="now" @close="close" @delete="deleting = true" /></dialog>
-  <ConfirmDialog v-if="pending" title="Discard unsaved changes?" message="Your booking has unsaved changes. Discard them to continue?" confirm-label="Discard changes" danger @cancel="pending = null" @confirm="discard" />
-  <ConfirmDialog v-if="deleting" title="Delete this booking?" message="This will free up the room for others. This action cannot be undone." confirm-label="Delete booking" danger @cancel="deleting = false" @confirm="deleting = false; store.deleteBooking().then(syncDialog)" />
+  <ConfirmDialog v-if="pending" title="Discard unsaved changes?" message="Your booking has unsaved changes. Discard them to continue?" confirm-label="Discard changes" danger @cancel="cancelConfirmation" @confirm="discard" />
+  <ConfirmDialog v-if="deleting" title="Delete this booking?" message="This will free up the room for others. This action cannot be undone." confirm-label="Delete booking" danger @cancel="cancelConfirmation" @confirm="deleting = false; store.deleteBooking().then(syncDialog)" />
 </template>
