@@ -11,7 +11,7 @@ const store = useBookingsStore(), now = ref(new Date()), mobile = ref(window.mat
 const formDialog = ref<HTMLDialogElement>(), pending = ref<(() => void) | null>(null), deleting = ref(false)
 import { availableStarts } from './utils/availability'
 const modal = computed(() => mobile.value || !!store.editingId)
-const canCreate = computed(() => availableStarts(store.selectedDate, store.bookings, undefined, now.value).length > 0)
+const canCreate = computed(() => store.availabilityReady && availableStarts(store.selectedDate, store.bookings, undefined, now.value).length > 0)
 const dateLabel = computed(() => new Date(`${store.selectedDate}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))
 let timer: ReturnType<typeof setInterval>
 let returnFocus: HTMLElement | null = null
@@ -41,7 +41,7 @@ onBeforeUnmount(() => { clearInterval(timer); window.removeEventListener('before
   <main>
     <div class="breadcrumb">Workspace <span>/</span> Meeting rooms <span>/</span> <b>The Studio</b></div>
     <section class="room-heading"><div><span class="eyebrow">YOUR SPACE TO CONNECT</span><h1>The Studio<span class="room-status"><i /> Meeting room</span></h1><p>Good conversations start with the right space.</p></div><button class="button new-booking" :disabled="store.submitting || !canCreate" @click="open()"><Plus :size="17" /> New booking</button></section>
-    <p v-if="!canCreate" class="schedule-message">No valid intervals remain for this date. Select a future date.</p>
+    <p v-if="store.availabilityReady && !canCreate" class="schedule-message">No valid intervals remain for this date. Select a future date.</p>
     <div class="room-details"><span><Users :size="16" /> Up to 8 people</span><span><Video :size="16" /> Video conferencing</span><span><Wifi :size="16" /> High-speed Wi-Fi</span><span class="room-location">2nd floor · East wing <ArrowUpRight :size="14" /></span></div>
     <section class="date-toolbar" aria-label="Date navigation"><div class="date-summary"><CalendarDays :size="21" /><div><h2>{{ dateLabel }}</h2><span>{{ store.selectedDate === localDate(now) ? 'Today' : 'Daily view' }} · 09:00–18:00</span></div></div><div class="date-controls"><button class="button secondary today-button" :disabled="store.submitting" @click="changeDate(localDate(now))">Today</button><button class="icon-button" aria-label="Previous day" :disabled="store.submitting" @click="moveDate(-1)"><ChevronLeft :size="19" /></button><label class="sr-only" for="date">Select date</label><input id="date" type="date" :value="store.selectedDate" :disabled="store.submitting" @change="(e) => { const el = e.target as HTMLInputElement; changeDate(el.value); el.value = store.selectedDate }" /><button class="icon-button" aria-label="Next day" :disabled="store.submitting" @click="moveDate(1)"><ChevronRight :size="19" /></button></div></section>
     <p v-if="store.notice" class="feedback success" role="status">{{ store.notice }}</p>

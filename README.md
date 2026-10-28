@@ -8,7 +8,7 @@ Live demo: **[URL to be added after deployment]**
 
 - Daily timeline from 09:00 to 18:00 with proportional booking blocks and past-time shading.
 - Date selection in the creation form, synchronized with the timeline.
-- Unavailable starts are disabled; changing start selects the earliest valid end (normally +30 minutes). End options respect duration and overlap rules.
+- Unavailable starts are hidden; submitted unavailable values remain visible after conflicts; changing start selects the earliest valid end (normally +30 minutes). End options respect duration and overlap rules.
 - Editing and read-only past-booking details open in a centered modal on all screen sizes.
 - Successful creation scrolls to the new booking by its returned ID, respecting reduced motion.
 - Inline validation, loading and error states, deletion confirmation, and unsaved-change warnings.
@@ -109,3 +109,5 @@ When the server returns 409, the form stays open and all entered values remain u
 - Actual development time: **[to be filled in]**.
 - No known unfinished application features within the requested scope. Live deployment and its URL remain pending.
 - Production use would require a shared backend with transactional overlap checks and a defined room timezone.
+
+Availability choices are withheld until the selected date loads successfully. Failed refreshes retain the last schedule for that date and offer retry. Successful mutations remain reported as successful if the schedule refresh fails. Pending creation scrolls are canceled when navigating to another date.
