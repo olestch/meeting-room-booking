@@ -14,6 +14,12 @@ const locked = computed(() => {
 const starts = computed(() => store.availabilityReady ? availableStarts(store.draft?.date ?? store.selectedDate, store.bookings, store.editingId, props.now) : [])
 const ends = computed(() => store.availabilityReady ? availableEnds(store.draft?.date ?? store.selectedDate, store.draft?.start ?? '', store.bookings, store.editingId, props.now) : [])
 const canCreate = computed(() => store.availabilityReady && availableStarts(store.selectedDate, store.bookings, undefined, props.now).length > 0)
+function changeDate(event: Event) {
+  const input = event.target as HTMLInputElement
+  void store.changeDraftDate(input.value)
+  // The store accepts or rejects the date before awaiting its schedule request.
+  input.value = store.draft?.date ?? ''
+}
 </script>
 <template>
   <div class="form-content">
@@ -23,7 +29,7 @@ const canCreate = computed(() => store.availabilityReady && availableStarts(stor
       <p v-if="store.loading" role="status">Loading availability…</p><p v-else-if="store.error" role="alert">{{ store.error }} <button class="text-button" @click="store.fetchBookings()">Retry schedule</button></p><p v-else-if="!store.availabilityReady" role="status">Load the schedule before choosing a time.</p>
       <form novalidate @submit.prevent="store.saveBooking()">
         <fieldset :disabled="store.submitting || locked">
-          <label for="booking-date">Booking date</label><p v-if="store.editingId" id="booking-date" aria-label="Booking date">{{ new Date(`${store.draft.date}T12:00:00`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</p><input v-else id="booking-date" type="date" :value="store.draft.date" :min="localDate(now)" @change="store.changeDraftDate(($event.target as HTMLInputElement).value)" /><p v-if="store.availabilityReady && !starts.length && !locked" class="feedback" role="status">No valid intervals remain. Choose a future date.</p>
+          <label for="booking-date">Booking date</label><p v-if="store.editingId" id="booking-date" aria-label="Booking date">{{ new Date(`${store.draft.date}T12:00:00`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</p><input v-else id="booking-date" type="date" :value="store.draft.date" :min="localDate(now)" @change="changeDate" /><p v-if="store.availabilityReady && !starts.length && !locked" class="feedback" role="status">No valid intervals remain. Choose a future date.</p>
           <label for="title">Meeting title <span class="optional">optional</span></label>
           <input id="title" v-model="store.draft.title" @input="delete store.validationErrors.title" placeholder="e.g. Team catch-up" maxlength="120" :aria-invalid="!!store.validationErrors.title" aria-describedby="title-error" />
           <p v-if="store.validationErrors.title" id="title-error" class="field-error">{{ store.validationErrors.title }}</p>
