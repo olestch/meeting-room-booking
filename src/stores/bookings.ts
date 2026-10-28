@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Booking, BookingInput, ValidationErrors } from '../types/booking'
 import { bookingsApi } from '../api/bookingsApi'
@@ -13,23 +13,27 @@ export const useBookingsStore = defineStore('bookings', () => {
   const draft = ref<BookingInput | null>(null), editingId = ref<string>()
   const loading = ref(false), submitting = ref(false), error = ref(''), formError = ref(''), notice = ref('')
   const validationErrors = ref<ValidationErrors>({})
-  const createdId = ref<string>()
+  const pendingScroll = ref<{ id: string; date: string }>()
+  const loadedDate = ref<string>()
+  const availabilityReady = computed(() => loadedDate.value === selectedDate.value && !loading.value && !error.value)
+  watch(selectedDate, () => { pendingScroll.value = undefined }, { flush: 'sync' })
   const originalStart = ref('')
   let baseline = '', requestId = 0
   const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== baseline)
   const sortedBookings = computed(() => [...bookings.value].sort((a, b) => a.start.localeCompare(b.start)))
   async function fetchBookings() {
     const current = ++requestId, date = selectedDate.value
+    if (loadedDate.value !== date) bookings.value = []
     loading.value = true; error.value = ''
-    try { const result = await bookingsApi.getByDate(date); if (current === requestId) bookings.value = result }
-    catch (e) { if (current === requestId) { error.value = message(e) } }
+    try { const result = await bookingsApi.getByDate(date); if (current === requestId && date === selectedDate.value) { bookings.value = result; loadedDate.value = date } }
+    catch (e) { if (current === requestId && date === selectedDate.value) { error.value = 'Schedule could not be refreshed: ' + message(e) } }
     finally { if (current === requestId) loading.value = false }
   }
   async function selectDate(date: string) {
     selectedDate.value = date; bookings.value = []; closeForm(); notice.value = ''; await fetchBookings()
   }
   function openCreateForm(start?: string) {
-    const starts = availableStarts(selectedDate.value, bookings.value)
+    const starts = availabilityReady.value ? availableStarts(selectedDate.value, bookings.value) : []
     const chosen = start && starts.includes(start) ? start : starts[0] ?? ''
     draft.value = { date: selectedDate.value, start: chosen, end: availableEnds(selectedDate.value, chosen, bookings.value)[0] ?? '', title: '' }
     editingId.value = undefined; baseline = JSON.stringify(draft.value); formError.value = ''; validationErrors.value = {}; notice.value = ''
@@ -41,14 +45,14 @@ export const useBookingsStore = defineStore('bookings', () => {
   }
   function closeForm() { draft.value = null; editingId.value = undefined; formError.value = ''; validationErrors.value = {} }
   async function saveBooking() {
-    if (!draft.value || submitting.value) return
+    if (!draft.value || submitting.value || !availabilityReady.value) return
     validationErrors.value = validateBooking(draft.value, bookings.value, editingId.value)
     formError.value = ''
     if (Object.keys(validationErrors.value).length) return
     submitting.value = true
     try {
       if (editingId.value) await bookingsApi.update(editingId.value, { ...draft.value })
-      else { const created = await bookingsApi.create({ ...draft.value }); createdId.value = created.id }
+      else { const created = await bookingsApi.create({ ...draft.value }); pendingScroll.value = { id: created.id, date: created.date } }
       notice.value = editingId.value ? 'Booking updated.' : 'Booking created.'
       closeForm(); await fetchBookings()
     } catch (e) {
@@ -64,7 +68,7 @@ export const useBookingsStore = defineStore('bookings', () => {
     finally { submitting.value = false }
   }
   function changeStart(start: string) {
-    if (!draft.value) return
+    if (!draft.value || !availabilityReady.value) return
     draft.value.start = start
     draft.value.end = availableEnds(draft.value.date, start, bookings.value, editingId.value)[0] ?? ''
     validationErrors.value = {}; formError.value = ''
@@ -77,10 +81,12 @@ export const useBookingsStore = defineStore('bookings', () => {
     await fetchBookings()
     if (draft.value !== currentDraft || currentDraft.date !== date || error.value) return
     const starts = availableStarts(date, bookings.value)
-    if (!starts.includes(currentDraft.start) || !availableEnds(date, currentDraft.start, bookings.value).includes(currentDraft.end)) {
+    if (starts.includes(currentDraft.start)) {
+      if (!availableEnds(date, currentDraft.start, bookings.value).includes(currentDraft.end)) changeStart(currentDraft.start)
+    } else {
       const nearest = [...starts].sort((a,b) => Math.abs(toMinutes(a) - toMinutes(currentDraft.start)) - Math.abs(toMinutes(b) - toMinutes(currentDraft.start)))[0] ?? ''
       changeStart(nearest)
     }
   }
-  return { createdId, originalStart, changeStart, changeDraftDate, selectedDate, bookings, draft, editingId, loading, submitting, error, formError, validationErrors, notice, dirty, sortedBookings, fetchBookings, selectDate, openCreateForm, openEditForm, closeForm, saveBooking, deleteBooking }
+  return { loadedDate, availabilityReady, pendingScroll, originalStart, changeStart, changeDraftDate, selectedDate, bookings, draft, editingId, loading, submitting, error, formError, validationErrors, notice, dirty, sortedBookings, fetchBookings, selectDate, openCreateForm, openEditForm, closeForm, saveBooking, deleteBooking }
 })

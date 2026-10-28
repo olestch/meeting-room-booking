@@ -14,7 +14,7 @@ let wrapper: VueWrapper | undefined
 afterEach(() => { wrapper?.unmount(); wrapper = undefined })
 function setup() {
   setActivePinia(createPinia())
-  const store = useBookingsStore(); store.selectedDate = '2030-05-07'; mockStore.write([]); store.openCreateForm('10:00')
+  const store = useBookingsStore(); store.selectedDate = '2030-05-07'; store.loadedDate = store.selectedDate; mockStore.write([]); store.openCreateForm('10:00')
   return store
 }
 describe('form and server integration', () => {

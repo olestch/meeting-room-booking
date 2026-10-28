@@ -14,16 +14,16 @@ let wrapper: VueWrapper | undefined
 afterEach(() => { wrapper?.unmount(); wrapper = undefined })
 function setup() {
   setActivePinia(createPinia()); mockStore.write([])
-  const store = useBookingsStore(); store.selectedDate = '2030-05-07'; store.openCreateForm('10:00'); return store
+  const store = useBookingsStore(); store.selectedDate = '2030-05-07'; store.loadedDate = store.selectedDate; store.openCreateForm('10:00'); return store
 }
 it('rounds future starts up and disables past or too-late options', () => {
-  const store = setup(); store.selectedDate = '2030-05-06'; store.openCreateForm()
+  const store = setup(); store.selectedDate = '2030-05-06'; store.loadedDate = store.selectedDate; store.openCreateForm()
   const now = new Date(2030,4,6,12,35)
   expect(availableStarts(store.selectedDate, [], undefined, now)[0]).toBe('12:45')
   wrapper = mount(BookingForm, { props: { now } })
   const options = wrapper.findAll('#start option')
-  expect(options.find(o => o.text() === '12:30')!.attributes('disabled')).toBeDefined()
-  expect(options.find(o => o.text() === '17:45')!.attributes('disabled')).toBeDefined()
+  expect(options.find(o => o.text() === '12:30')).toBeUndefined()
+  expect(options.find(o => o.text() === '17:45')).toBeUndefined()
 })
 it('constrains end options and allows touching boundaries', async () => {
   const store = setup(); store.bookings = [{ id: 'busy', date: store.selectedDate, start: '11:00', end: '12:00' }]
@@ -34,7 +34,7 @@ it('constrains end options and allows touching boundaries', async () => {
   expect(wrapper.findAll('#end option').map(o => o.text())).toEqual(['10:45','11:00'])
 })
 it('shows no intervals after 17:30 and across 18:00 without invalid defaults', async () => {
-  const store = setup(); store.selectedDate = '2030-05-06'
+  const store = setup(); store.selectedDate = '2030-05-06'; store.loadedDate = store.selectedDate
   vi.setSystemTime(new Date(2030,4,6,17,35)); store.openCreateForm()
   expect(store.draft!.start).toBe(''); expect(store.draft!.end).toBe('')
   wrapper = mount(BookingForm, { props: { now: new Date() } })
