@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 test('creates, edits, and deletes a meeting on desktop and mobile', async ({ page }) => {
   await page.clock.install({ time: new Date('2030-05-06T08:00:00') })
   await page.goto('/')
-  await page.getByLabel('Select date').fill('2030-05-07')
+  await page.getByLabel('Select date').fill('2030-05-20')
   await expect(page.getByText('No bookings for this day.', { exact: false })).toBeVisible()
   await page.getByRole('button', { name: 'New booking', exact: true }).first().click()
   await page.getByLabel('Meeting title').fill('Roadmap workshop')
@@ -13,6 +13,7 @@ test('creates, edits, and deletes a meeting on desktop and mobile', async ({ pag
   await expect(card).toContainText('Roadmap workshop')
   await expect(card).toContainText('10:00 – 11:00')
   await card.click()
+  await expect(page.getByRole('dialog', { name: 'Edit booking' })).toBeVisible()
   await page.getByLabel('Meeting title').fill('Roadmap review')
   await page.getByLabel('End time').selectOption('11:30')
   await page.getByRole('button', { name: 'Save changes' }).click()
